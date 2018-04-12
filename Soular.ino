@@ -1,22 +1,23 @@
-// Simple strand test for Adafruit Dot Star RGB LED strip.
-// This is a basic diagnostic tool, NOT a graphics demo...helps confirm
-// correct wiring and tests each pixel's ability to display red, green
-// and blue and to forward data down the line.  By limiting the number
-// and color of LEDs, it's reasonably safe to power a couple meters off
-// the Arduino's 5V pin.  DON'T try that with other code!
+/* Soular.ino
+ April 2018
+ Christopher Datsikas
+ Based on Adafruit Code */
 
 #include <Adafruit_DotStar.h>
-// Because conditional #includes don't work w/Arduino sketches...
 #include <SPI.h>         // COMMENT OUT THIS LINE FOR GEMMA OR TRINKET
 //#include <avr/power.h> // ENABLE THIS LINE FOR GEMMA OR TRINKET
 
-#define NUMPIXELS 30 // Number of LEDs in strip
+#define NUMPIXELS 6 // Number of LEDs in strip
+#define LAMPOFF 0
+#define LAMPHALF 50
+#define LAMPFULL 150
+#define SPEED 10
 
 // Here's how to control the LEDs from any two pins:
-#define DATAPIN    11
-#define CLOCKPIN   13
-Adafruit_DotStar strip = Adafruit_DotStar(
-  NUMPIXELS, DATAPIN, CLOCKPIN, DOTSTAR_BRG);
+//#define DATAPIN    11
+//#define CLOCKPIN   13
+//Adafruit_DotStar strip = Adafruit_DotStar(
+//NUMPIXELS, DATAPIN, CLOCKPIN, DOTSTAR_BRG);
 // The last parameter is optional -- this is the color data order of the
 // DotStar strip, which has changed over time in different production runs.
 // Your code just uses R,G,B colors, the library then reassigns as needed.
@@ -24,35 +25,78 @@ Adafruit_DotStar strip = Adafruit_DotStar(
 
 // Hardware SPI is a little faster, but must be wired to specific pins
 // (Arduino Uno = pin 11 for data, 13 for clock, other boards are different).
-//Adafruit_DotStar strip = Adafruit_DotStar(NUMPIXELS, DOTSTAR_BRG);
+Adafruit_DotStar strip = Adafruit_DotStar(NUMPIXELS, DOTSTAR_BRG);
+
+int inPin = 4;         // the number of the input pin
+int outPin = 13;       // the number of the output pin
+
+int state = HIGH;      // the current state of the output pin
+int reading;           // the current reading from the input pin
+int previous = LOW;    // the previous reading from the input pin
+
+// the follow variables are long's because the time, measured in miliseconds,
+// will quickly become a bigger number than can be stored in an int.
+long time = 0;         // the last time the output pin was toggled
+long debounce = 200;   // the debounce time, increase if the output flickers
 
 void setup() {
-
-#if defined(__AVR_ATtiny85__) && (F_CPU == 16000000L)
-  clock_prescale_set(clock_div_1); // Enable 16 MHz on Trinket
-#endif
-
+  pinMode(inPin, INPUT);
+  pinMode(outPin, OUTPUT);
+  
   strip.begin(); // Initialize pins for output
+  strip.clear();
   strip.show();  // Turn all LEDs off ASAP
 }
 
-// Runs 10 LEDs at a time along strip, cycling through red, green and blue.
-// This requires about 200 mA for all the 'on' pixels + 1 mA per 'off' pixel.
 
-int      head  = 0, tail = -10; // Index of first 'on' and 'off' pixels
-uint32_t color = 0xFF0000;      // 'On' color (starts red)
 
 void loop() {
+  // continuously polls the capacitive sensor
+  reading = digitalRead(inPin);
 
-  strip.setPixelColor(head, color); // 'On' pixel at head
-  strip.setPixelColor(tail, 0);     // 'Off' pixel at tail
-  strip.show();                     // Refresh strip
-  delay(20);                        // Pause 20 milliseconds (~50 FPS)
+  // if the input just went from HIGH TO LOW and we've waited long enough
+  // to ignore any noise on the circuit, toggle the output pin and remember
+  // the time. Capacitive sensor is active low.
+  if (reading == LOW && previous == HIGH && millis() - time > debounce) {
+    if (state == HIGH) {
+      state = LOW;
+      fade(LAMPOFF,LAMPFULL,SPEED);
+    }
+    else {
+      state = HIGH;
+      fade(LAMPFULL, LAMPOFF, SPEED);
+    }
 
-  if(++head >= NUMPIXELS) {         // Increment head index.  Off end of strip?
-    head = 0;                       //  Yes, reset head index to start
-    if((color >>= 8) == 0)          //  Next color (R->G->B) ... past blue now?
-      color = 0xFF0000;             //   Yes, reset to red
+    time = millis();    
   }
-  if(++tail >= NUMPIXELS) tail = 0; // Increment, reset tail index
+
+  digitalWrite(outPin, state);
+
+  previous = reading;
+
 }
+
+
+// go from a starting brightness level to an endBrightness level in a certain amount of time
+// this is awful code; TODO: rewrite
+void fade(uint8_t startBrightness, uint8_t endBrightness, uint8_t wait) {
+  if (startBrightness < endBrightness) {
+    for (int b = startBrightness ; b < endBrightness; b++){
+      for (int thisPixel = 0; thisPixel < NUMPIXELS; thisPixel++) {   // iterate through all the levers                               // if lever is pulled down, turn green
+        strip.setPixelColor(thisPixel, b,b,b);   // Moderately bright green color.
+      }
+      strip.show();                             // Update pixel color.
+      delay(wait);
+    }
+  }
+  else if (startBrightness > endBrightness) {
+    for (int b = startBrightness ; b > endBrightness; b--){
+      for (int thisPixel = 0; thisPixel < strip.numPixels(); thisPixel++) {   // iterate through all the levers                               // if lever is pulled down, turn green
+        strip.setPixelColor(thisPixel, b,b,b);   // Moderately bright green color.
+      }
+      strip.show();                             // Update pixel color.
+      delay(wait);
+    }
+  }
+}
+
