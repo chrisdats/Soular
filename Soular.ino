@@ -7,10 +7,10 @@
 #include <SPI.h>         // COMMENT OUT THIS LINE FOR GEMMA OR TRINKET
 //#include <avr/power.h> // ENABLE THIS LINE FOR GEMMA OR TRINKET
 
-#define NUMPIXELS 6 // Number of LEDs in strip
+#define NUMPIXELS 29 // Number of LEDs in strip
 #define LAMPOFF 0
 #define LAMPHALF 50
-#define LAMPFULL 150
+#define LAMPFULL 254
 #define SPEED 10
 
 // Here's how to control the LEDs from any two pins:
