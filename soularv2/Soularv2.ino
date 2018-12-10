@@ -1,20 +1,13 @@
 /* Soular.ino
- April 2018
+ November 2018
  Christopher Datsikas
- Based on Adafruit Code 
+ Based on Adafruit Code */
 
-Required Hardware
-- Arduino Nano
-- 5-pin capacitive sensor https://www.adafruit.com/product/1362
-- Neopixels/Dotstar
-
- */
-
-#include <Adafruit_DotStar.h>
+#include <Adafruit_NeoPixel.h>
 #include <SPI.h>         // COMMENT OUT THIS LINE FOR GEMMA OR TRINKET
 //#include <avr/power.h> // ENABLE THIS LINE FOR GEMMA OR TRINKET
 
-#define NUMPIXELS 29 // Number of LEDs in strip
+#define NUMPIXELS 8 // Number of LEDs in strip
 #define LAMPOFF 0
 #define LAMPHALF 50
 #define LAMPFULL 254
@@ -32,7 +25,7 @@ Required Hardware
 
 // Hardware SPI is a little faster, but must be wired to specific pins
 // (Arduino Uno = pin 11 for data, 13 for clock, other boards are different).
-Adafruit_DotStar strip = Adafruit_DotStar(NUMPIXELS, DOTSTAR_BRG);
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_RGBW + NEO_KHZ800);
 
 int inPin = 4;         // the number of the input pin
 int outPin = 13;       // the number of the output pin
